@@ -13,9 +13,9 @@ Ideas and TO DO:
 
 + Use TF-agents
 + Pick a game
- - Super Mario
- - Mario Kart
- - Bomberman
+  - Super Mario
+  - Mario Kart
+  - Bomberman
  
  
 Contributers:
