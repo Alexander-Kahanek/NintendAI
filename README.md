@@ -20,7 +20,7 @@ Ideas and TO DO:
   - Bomberman
  
  
-Contributers:
+# Contributers
 
 + Alexander Kahanek
 + Chet Lockwood
