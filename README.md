@@ -11,7 +11,9 @@ Python (3.9+)
 
 Ideas and TO DO:
 
-+ Use TF-agents
++ Setup Enviroment
+  - get TF-agents running
+  - get GYM emulator running
 + Pick a game
   - Super Mario
   - Mario Kart
