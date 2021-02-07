@@ -14,10 +14,12 @@ Ideas and TO DO:
 + Setup Enviroment
   - get TF-agents running
   - get GYM emulator running
+  - test example run
 + Pick a game
   - Super Mario
   - Mario Kart
   - Bomberman
+  - Others ...?
  
  
 # Contributers
