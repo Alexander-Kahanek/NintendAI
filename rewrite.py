@@ -85,7 +85,7 @@ class BufferWrapper(gym.ObservationWrapper):
     def __init__(self, env, n_steps, dtype = np.float32):
         super().__init__(env)
         self.dtype = dtype
-        old_source = env.observation_space
+        old_space = env.observation_space
         self.observation_space = gym.spaces.Box(
             old_space.low.repeat(n_steps, axis=0)
             ,old_space.high.repeat(n_steps, axis=0)
@@ -121,6 +121,152 @@ def make_env(game_name):
 
 
 ########################################################
+# Double Deep Q Network code
+
+class DQNSolver(nn.Module):
+
+    def __init__(self, input_shape, n_actions):
+        super().__init__()
+
+        # setting up convultion network
+        # applying ReLU to nodes and changing node sizes
+        self.conv = nn.Sequential(
+            nn.Conv2d(input_shape[0], 32, kernal_size = 8, stride = 4)
+            ,nn.ReLU()
+            ,nn.Conv2d(32, 64, kernel_size = 4, stride = 2)
+            ,nn.ReLU()
+            ,nn.Conv2d(64, 64, kernel_size = 3, stride = 1)
+            ,nn.ReLU()
+        )
+
+        # getting final convolution network size
+        conv_out_size = self._get_conv_out(input_shape)
+        # applying sequential linear to 512 (nodes?), ReLU
+        # ,then to get number of actions
+        self.fc = nn.Sequential(
+            nn.Linear(conv_out_size, 512)
+            ,nn.ReLU()
+            ,nn.Linear(512, n_actions)
+        )
+
+    def _get_conv_out(self, shape):
+        o = self.conv(torch.zeros(1, *shape))
+        return int(np.prod(o.size()))
+
+    def forward(self, x):
+        pass
+
+
+class DQNAgent:
+
+    def __init__(self, state_space, action_space, max_memory_size, batch_size, gamma, lr, dropout, exploration_max, exploration_min, exploration_decay, double_dq, pretrained):
+
+        self.state_space = state_space
+        self.action_space = action_space
+        self.double_dq = double_dq
+        self.pretrained = pretrained
+        self.device = 'cuda' if torn.cuda.is_available() else 'cpu'
+        if self.double_dq:
+            # algorithm for double deep q network
+            self.local_net = DQNSolver(state_space, action_space).to(self.device)
+            self.target_net = DQNAgent(state_space, action_space).to(self.device)
+
+            if self.pretrained:
+                self.local_net.load_state_dict(torch.load('dq1.pt', map_location=torch.device(self.device)))
+                self.target_net.load_state_dict(torch.load('dq2.pt', map_location=torch.device(self.device)))
+
+            self.optimizer = torch.optim.Adam(self.local_net.parameters(), lr=lr)
+            slef.copy = 5000 # updates weights every 5000 steps
+            self.step = 0
+        else:
+            # algorithm for deep q network
+            self.dqn = DQNSolver(state_space, action_space).to(self.device)
+
+                if self.pretrained:
+                    self.dqn.load_state_dict(torch.load('dq.pt', map_location = torch.device(se;f.device)))
+                self.optimizer = torch.optim.Adam(self.dqn.parameters(), lr = lr)
+
+
+        # creating memory for saves
+        self.max_memory_size = max_memory_size
+        if self.pretrained:
+            self.STATE_MEM = torch.load("STATE_MEM.pt")
+            self.ACTION_MEM = torch.load("ACTION_MEM.pt")
+            self.REWARD_MEM = torch.load("REWARD_MEM.pt")
+            self.STATE2_MEM = torch.load("STATE2_MEM.pt")
+            self.DONE_MEM = torch.load("DONE_MEM.pt")
+            self.ending_position = pickle.load(open("ending_position.pkl", 'rb'))
+            self.num_in_queue = pickle.load(open('num_in_queue.pkl', 'rb'))
+
+        else:
+            self.STATE_MEM = torch.zeros(max_memory_size, *self.state_space)
+            self.ACTION_MEM = torch.zeros(max_memory_size, 1)
+            self.REWARD_MEM = torch.zeros(max_memory_size, 1)
+            self.STATE2_MEM = torch.zeros(max_memory_size, *self.state_space)
+            self.DONE_MEM = torch.zeros(max_memory_size, 1)
+            self.ending_position = 0
+            self.num_in_queue = 0
+
+        self.memory_sample_size = batch_size
+
+        # learning parameters
+        self.gamma = gamma
+        self.l1 = nn.SmoothL1Loss().to(self.device)
+
+        self.exploration_max = exploration_max
+        self.exploration_rate = exploration_max # how much we have explored
+        self.exploration_min = exploration_min
+        self.exploration_decay = exploration_decay
+
+    def remember():
+        pass
+
+    def recall():
+        pass
+
+    def act(self, state):
+        '''choose our action for the current state step'''
+
+        if self.double_dq:
+            self.step += 1
+        if random.random() < self.exploration_rate:
+            # if exploration rate is the max, ie new training,\
+            # then pull a random action
+            return torch.tensor([[random.randrange(self.action_space)]])
+
+        if self.double_dq:
+            # find the max probability of the action to take from the local net
+            # then reduce dimensionality to return the chosen action
+            return torch.argmax(self.local_net(state.to(self.device))).unsqueeze(0).unsqueeze(0).cpu
+        else:
+            # find the max probability of the dqn net
+            # then reduce dimensionality to return the chosen action 
+            return torch.argmax(self.dqn(state.to(self.device))).unqueeze(0).unsqueeze(0).cpu()
+    
+    def copy_model():
+        pass
+
+    def experience_replay():
+        pass
+
+
+
+########################################################
+# helper functions
+
+def show_state(env, ep=0, info=""):
+    plt.figure(3)
+    plt.clf()
+    plt.imshow(env.render(mode = 'rgb_array'))
+    plt.title(f'Episode: {ep} {info}')
+    plt.axis('off')
+
+    display.clear_output(wait = True)
+    display.display(plt.gcf())
+
+
+
+########################################################
 # main function
 
 def train(training_mode=True, pretrained=False):
@@ -132,6 +278,40 @@ def train(training_mode=True, pretrained=False):
 
     print('environment is:', env, observation_space, action_space)
 
-    # agent = stuff
+    agent = DQNAgent(
+        state_space = action_space
+        ,max_memory_size = 30000
+        ,batch_size = 32
+        ,gamma = 0.90
+        ,lr = 0.00025
+        ,dropout = 0.1 # value was messed
+        ,exploration_max = 1.0
+        ,exploration_min = 0.02
+        ,exploration_decay = 0.99
+        ,double_dq = True
+        ,pretrained = pretrained
+    )
+
+    num_episodes = 100 # training epochs
+    env.reset()
+
+    for ep_num in tqdm(range(num_episodes)):
+        state = env.reset()
+        state = torch.Tensor([state])
+        total_reward = 0
+        steps = 0
+        while True:
+            if not training_mode:
+                show_state(env, ep_num)
+            action = agent.act(state) ########## stopped here
+            steps += 1
+
+            state_next, reward, terminal, info = env.step(int(action[0]))
+
+            total_reward += reward
+            state_next = torch.Tensor([state_next])
+            reward = torch.tensor([reward]).unsqueeze(0)
+
+            terminal = torch.tensor([in(terminal)]).unsqueeze(0)
 
 train()
