@@ -4,7 +4,7 @@ IN PROGRESS: implementation of Reinforcement Learning on Nintendo Games
  
 # Requirements
 
-Python (3.9+)
+Python (3.8.8)
 
 
 # Plan
