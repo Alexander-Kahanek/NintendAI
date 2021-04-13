@@ -368,7 +368,7 @@ def run(training_mode, pretrained, num_episodes, batch_size, gamma):
                       ,batch_size = batch_size
                       ,gamma = gamma
                       ,learnRate = 0.00025
-                      ,dropout = 0.1 # CHANGEABLE, STARTS AT 0.x
+                      ,dropout = 0.1
                       ,exploration_max = 1.0
                       ,exploration_min = 0.02
                       ,exploration_decay = 0.99
