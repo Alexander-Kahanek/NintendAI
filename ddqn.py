@@ -379,6 +379,7 @@ def run(training_mode, pretrained, num_episodes, batch_size, gamma):
     
     gymEnvironment.reset()
     total_rewards = []
+    open(f'{fp}training_rewards.txt', 'a').write(f'epoch_num\tstep\taction\treward\ttotal_reward').close()
 
     for epoch_num in tqdm(range(num_episodes), bar_format='{l_bar}{bar:20}{r_bar}{bar:1b}'):
         state = gymEnvironment.reset()
@@ -403,6 +404,7 @@ def run(training_mode, pretrained, num_episodes, batch_size, gamma):
                 agent.experience_replay()
 
             state = state_next
+            open(f'{fp}training_rewards.txt', 'a').write(f'{epoch_num}\t{step}\t{action}\t{reward}\t{total_reward}').close()
             if terminal:
                 break
 
