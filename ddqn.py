@@ -379,7 +379,7 @@ def run(training_mode, pretrained, num_episodes, batch_size, gamma):
     
     gymEnvironment.reset()
     total_rewards = []
-    open(f'{fp}training_rewards.txt', 'a').write(f'epoch_num\tstep\taction\treward\ttotal_reward').close()
+    open(f'{fp}training_rewards.txt', 'a').write(f'epoch_num\tsteps\taction\treward\ttotal_reward\n')
 
     for epoch_num in tqdm(range(num_episodes), bar_format='{l_bar}{bar:20}{r_bar}{bar:1b}'):
         state = gymEnvironment.reset()
@@ -404,7 +404,7 @@ def run(training_mode, pretrained, num_episodes, batch_size, gamma):
                 agent.experience_replay()
 
             state = state_next
-            open(f'{fp}training_rewards.txt', 'a').write(f'{epoch_num}\t{step}\t{action}\t{reward}\t{total_reward}').close()
+            open(f'{fp}training_rewards.txt', 'a').write(f'{epoch_num}\t{steps}\t{action.item()}\t{reward.item()}\t{total_reward}\n')
             if terminal:
                 break
 
@@ -431,9 +431,9 @@ def run(training_mode, pretrained, num_episodes, batch_size, gamma):
 
     gymEnvironment.close()
 
-    if num_episodes > 500:
-        pyplot.title("Episodes trained vs Average Rewards (per 500 EPOCHS)")
-        pyplot.plot([0 for _ in range(500)] + numpy.convolve(total_rewards, numpy.ones((500,))/500, mode="valid").tolist())
+    if num_episodes > 1:
+        pyplot.title("Episodes trained vs Average Rewards (per EPOCH)")
+        pyplot.plot([0 for _ in range(1)] + numpy.convolve(total_rewards, numpy.ones((1,))/1, mode="valid").tolist())
         pyplot.show()    
 
 if __name__ == '__main__':
