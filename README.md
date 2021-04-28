@@ -13,7 +13,7 @@ Below are a summary of all the files in this repository:
 
 + `blog/`
   - super_mario.ipynb
-    + the original DDQN code base
+    + the original DDQN codebase
 + GoMarioGo.ipynb
   - the python notebook to render previous training models
 + NintendAI.py
