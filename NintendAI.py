@@ -371,7 +371,7 @@ def run(training_mode, pretrained):
     num_episodes = 10001
     env.reset()
     total_rewards = []
-    open(f'training_log.txt', 'w').write(f'epoch_num\tsteps\taction\treward\ttotal_reward\n')
+    open(f'training_log.txt', 'w').write(f'ep_num\tsteps\taction\treward\ttotal_reward\n')
     
     
 
@@ -398,7 +398,7 @@ def run(training_mode, pretrained):
                 agent.experience_replay()
             
             state = state_next
-            open(f'training_log.txt', 'a').write(f'{epoch_num}\t{steps}\t{action.item()}\t{reward.item()}\t{total_reward}\n')
+            open(f'training_log.txt', 'a').write(f'{ep_num}\t{steps}\t{action.item()}\t{reward.item()}\t{total_reward}\n')
             if terminal:
                 break
         
