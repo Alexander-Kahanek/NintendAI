@@ -382,8 +382,7 @@ def run(training_mode, pretrained):
         steps = 0
         while True:
             if not training_mode:
-                if ep_num > 4000:
-                    show_state(env, ep_num, f"step: {steps} reward: {int(total_reward)}")
+                show_state(env, ep_num, f"step: {steps} reward: {int(total_reward)}")
             action = agent.act(state)
             steps += 1
             
