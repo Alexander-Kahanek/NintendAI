@@ -12,12 +12,12 @@ Python (3.8.8)
 Below are a summary of all the files in this repository:
 
 + `blog/`
- - super_mario.ipynb
-  + the original DDQN code base
+  - super_mario.ipynb
+    + the original DDQN code base
 + GoMarioGo.ipynb
- - the python notebook to render previous training models
+  - the python notebook to render previous training models
 + NintendAI.py
- - the python script that holds our edited version of the DDQN codebase 
+  - the python script that holds our edited version of the DDQN codebase 
 
  
 # Contributers
