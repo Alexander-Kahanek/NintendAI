@@ -1,6 +1,8 @@
 # NintendAI
 
 This is an implementation of Reinforcement Learning on Super Mario Bros. A Double Deep Q-Network (DDQN) was used from [This wonderful blog post here](https://blog.paperspace.com/building-double-deep-q-network-super-mario-bros/); however, we have made some edits to the code. Mainly, comments and quality of life updates.
+
+Our Mario learning - https://www.youtube.com/watch?v=WrNR8HqOe4U
  
 # Requirements
 
