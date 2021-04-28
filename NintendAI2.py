@@ -21,13 +21,16 @@ import os
 
 class MaxAndSkipEnv(gym.Wrapper):
     def __init__(self, env=None, skip=4):
-        """Return only every `skip`-th frame"""
+        '''return only every "skip"-th frame'''
         super(MaxAndSkipEnv, self).__init__(env)
+        
         # most recent raw observations (for max pooling across time steps)
         self._obs_buffer = collections.deque(maxlen=2)
         self._skip = skip
 
     def step(self, action):
+        '''pushes the chosen action to the environment'''
+        
         total_reward = 0.0
         done = None
         for _ in range(self._skip):
@@ -40,60 +43,75 @@ class MaxAndSkipEnv(gym.Wrapper):
         return max_frame, total_reward, done, info
 
     def reset(self):
-        """Clear past frame buffer and init to first obs"""
+        '''clear observation buffer and init to first obs'''
+        
         self._obs_buffer.clear()
         obs = self.env.reset()
         self._obs_buffer.append(obs)
         return obs
 
 class ProcessFrame84(gym.ObservationWrapper):
-    """
-    Downsamples image to 84x84
-    Greyscales image
-
-    Returns numpy array
-    """
+    '''Downsamples image to 84x84, greyscales image, returns numpy array'''
+    
     def __init__(self, env=None):
         super(ProcessFrame84, self).__init__(env)
-        self.observation_space = gym.spaces.Box(low=0, high=255, shape=(84, 84, 1), dtype=np.uint8)
+        
+        self.observation_space = gym.spaces.Box(low=0
+                                                ,high=255
+                                                ,shape=(84, 84, 1)
+                                                ,dtype=np.uint8)
 
     def observation(self, obs):
         return ProcessFrame84.process(obs)
 
     @staticmethod
     def process(frame):
+        
         if frame.size == 240 * 256 * 3:
             img = np.reshape(frame, [240, 256, 3]).astype(np.float32)
         else:
             assert False, "Unknown resolution."
+        
         img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
         resized_screen = cv2.resize(img, (84, 110), interpolation=cv2.INTER_AREA)
+
         x_t = resized_screen[18:102, :]
         x_t = np.reshape(x_t, [84, 84, 1])
+
         return x_t.astype(np.uint8)
 
 class ImageToPyTorch(gym.ObservationWrapper):
+    '''makes the image accessible by pytorch'''
+    
     def __init__(self, env):
         super(ImageToPyTorch, self).__init__(env)
+        
         old_shape = self.observation_space.shape
-        self.observation_space = gym.spaces.Box(low=0.0, high=1.0, shape=(old_shape[-1], old_shape[0], old_shape[1]),
-                                                dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=0.0
+                                                ,high=1.0
+                                                ,shape=(old_shape[-1], old_shape[0], old_shape[1])
+                                                ,dtype=np.float32)
 
     def observation(self, observation):
         return np.moveaxis(observation, 2, 0)
 
 class ScaledFloatFrame(gym.ObservationWrapper):
-    """Normalize pixel values in frame --> 0 to 1"""
+    '''normalize pixel values in frame -> 0 to 1'''
+    
     def observation(self, obs):
         return np.array(obs).astype(np.float32) / 255.0
 
 class BufferWrapper(gym.ObservationWrapper):
+    '''wraps environment space into buffer steps'''
+    
     def __init__(self, env, n_steps, dtype=np.float32):
         super(BufferWrapper, self).__init__(env)
+        
         self.dtype = dtype
         old_space = env.observation_space
-        self.observation_space = gym.spaces.Box(old_space.low.repeat(n_steps, axis=0),
-                                                old_space.high.repeat(n_steps, axis=0), dtype=dtype)
+        self.observation_space = gym.spaces.Box(old_space.low.repeat(n_steps, axis=0)
+                                                ,old_space.high.repeat(n_steps, axis=0)
+                                                ,dtype=dtype)
 
     def reset(self):
         self.buffer = np.zeros_like(self.observation_space.low, dtype=self.dtype)
@@ -109,6 +127,8 @@ class BufferWrapper(gym.ObservationWrapper):
 #################################################################################
 
 def make_env(env):
+    '''takes game version and creates environment from gym_super_mario_bros library'''
+    
     env = MaxAndSkipEnv(env)
     env = ProcessFrame84(env)
     env = ImageToPyTorch(env)
@@ -122,6 +142,8 @@ def vectorize_action(action, action_space):
     return [0 for _ in range(action)] + [1] + [0 for _ in range(action + 1, action_space)]
 
 def show_state(env, ep=0, info=""):
+    '''shows the current state of mario in his natural environment'''
+    
     plt.figure(3)
     plt.clf()
     plt.imshow(env.render(mode='rgb_array'))
@@ -140,20 +162,27 @@ class DQNSolver(nn.Module):
 
     def __init__(self, input_shape, n_actions):
         super(DQNSolver, self).__init__()
+
+        # setting up convolutional network
+        # applying ReLU (Rectified Linear Unit) function to nodes and changing node sizes
         self.conv = nn.Sequential(
-            nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
-            nn.ReLU()
+            nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4)
+            ,nn.ReLU()
+            ,nn.Conv2d(32, 64, kernel_size=4, stride=2)
+            ,nn.ReLU()
+            ,nn.Conv2d(64, 64, kernel_size=3, stride=1)
+            ,nn.ReLU()
         )
 
+        # getting final convolutional network size
         conv_out_size = self._get_conv_out(input_shape)
+
+        # applying sequential linear to 512 (nodes)
+        # ReLU, then get number of actions
         self.fc = nn.Sequential(
-            nn.Linear(conv_out_size, 512),
-            nn.ReLU(),
-            nn.Linear(512, n_actions)
+            nn.Linear(conv_out_size, 512)
+            ,nn.ReLU()
+            ,nn.Linear(512, n_actions)
         )
     
     def _get_conv_out(self, shape):
@@ -175,7 +204,9 @@ class DQNAgent:
         self.double_dq = double_dq
         self.pretrained = pretrained
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        if self.double_dq:  
+
+        if self.double_dq: 
+            # algorithm for double deep q network 
             self.local_net = DQNSolver(state_space, action_space).to(self.device)
             self.target_net = DQNSolver(state_space, action_space).to(self.device)
             
@@ -187,13 +218,14 @@ class DQNAgent:
             self.copy = 5000  # Copy the local model weights into the target network every 5000 steps
             self.step = 0
         else:  
+            # deep q network algorithm
             self.dqn = DQNSolver(state_space, action_space).to(self.device)
             
             if self.pretrained:
                 self.dqn.load_state_dict(torch.load("dq.pt", map_location=torch.device(self.device)))
             self.optimizer = torch.optim.Adam(self.dqn.parameters(), lr=lr)
 
-        # Create memory
+        # creating memory for save states
         self.max_memory_size = max_memory_size
         if self.pretrained:
             self.STATE_MEM = torch.load("STATE_MEM.pt")
@@ -220,11 +252,13 @@ class DQNAgent:
         self.gamma = gamma
         self.l1 = nn.SmoothL1Loss().to(self.device) # Also known as Huber loss
         self.exploration_max = exploration_max
-        self.exploration_rate = exploration_max
+        self.exploration_rate = exploration_max # how much we have explored
         self.exploration_min = exploration_min
         self.exploration_decay = exploration_decay
 
     def remember(self, state, action, reward, state2, done):
+        '''saves last state to memory'''
+        
         self.STATE_MEM[self.ending_position] = state.float()
         self.ACTION_MEM[self.ending_position] = action.float()
         self.REWARD_MEM[self.ending_position] = reward.float()
@@ -234,8 +268,10 @@ class DQNAgent:
         self.num_in_queue = min(self.num_in_queue + 1, self.max_memory_size)
         
     def recall(self):
-        # Randomly sample 'batch size' experiences
-        idx = random.choices(range(self.num_in_queue), k=self.memory_sample_size)
+        '''randomly samples "batch size" memory from the queue'''
+        
+        idx = random.choices(range(self.num_in_queue)
+                             ,k=self.memory_sample_size)
         
         STATE = self.STATE_MEM[idx]
         ACTION = self.ACTION_MEM[idx]
@@ -246,20 +282,25 @@ class DQNAgent:
         return STATE, ACTION, REWARD, STATE2, DONE
 
     def act(self, state):
-        # Epsilon-greedy action
+        '''choose our action for the current state step, using epsilon-greedy action'''
         
         if self.double_dq:
             self.step += 1
-        if random.random() < self.exploration_rate:  
+        if random.random() < self.exploration_rate: 
+            # if exploration rate is the max, ie new training,\
+            # then pull a random action 
             return torch.tensor([[random.randrange(self.action_space)]])
         if self.double_dq:
-            # Local net is used for the policy
+            # find the max probability of the action to take from the local net
+            # then reduce dimensionality to return the chosen action
             return torch.argmax(self.local_net(state.to(self.device))).unsqueeze(0).unsqueeze(0).cpu()
         else:
+            # find the max probability of the dqn net
+            # then reduce dimensionality to return the chosen action 
             return torch.argmax(self.dqn(state.to(self.device))).unsqueeze(0).unsqueeze(0).cpu()
 
     def copy_model(self):
-        # Copy local net weights into target net
+        '''copy local net weights into target net'''
         
         self.target_net.load_state_dict(self.local_net.state_dict())
     
@@ -281,16 +322,14 @@ class DQNAgent:
         self.optimizer.zero_grad()
         if self.double_dq:
             # Double Q-Learning target is Q*(S, A) <- r + γ max_a Q_target(S', a)
-            target = REWARD + torch.mul((self.gamma * 
-                                        self.target_net(STATE2).max(1).values.unsqueeze(1)), 
-                                        1 - DONE)
-
+            target = REWARD + torch.mul((self.gamma * self.target_net(STATE2).max(1).values.unsqueeze(1))
+                                        ,1 - DONE)
+            # local net approximation of Q-value
             current = self.local_net(STATE).gather(1, ACTION.long()) # Local net approximation of Q-value
         else:
             # Q-Learning target is Q*(S, A) <- r + γ max_a Q(S', a) 
-            target = REWARD + torch.mul((self.gamma * 
-                                        self.dqn(STATE2).max(1).values.unsqueeze(1)), 
-                                        1 - DONE)
+            target = REWARD + torch.mul((self.gamma * self.dqn(STATE2).max(1).values.unsqueeze(1))
+                                        ,1 - DONE)
                 
             current = self.dqn(STATE).gather(1, ACTION.long())
         
@@ -300,7 +339,8 @@ class DQNAgent:
 
         self.exploration_rate *= self.exploration_decay
         
-        # Makes sure that exploration rate is always at least 'exploration min'
+        # makes sure that exploration rate is always at least 'exploration min'
+        # i.e., adds a hard lower cap to the exploration rate, so that it never reaches 0.
         self.exploration_rate = max(self.exploration_rate, self.exploration_min)
 
 
@@ -314,22 +354,24 @@ def run(training_mode, pretrained):
     env = make_env(env)  # Wraps the environment so that frames are grayscale 
     observation_space = env.observation_space.shape
     action_space = env.action_space.n
-    agent = DQNAgent(state_space=observation_space,
-                     action_space=action_space,
-                     max_memory_size=30000,
-                     batch_size=64,
-                     gamma=0.90,
-                     lr=0.00025,
-                     dropout=0.,
-                     exploration_max=1.0,
-                     exploration_min=0.02,
-                     exploration_decay=0.99,
-                     double_dq=True,
-                     pretrained=pretrained)
+
+    agent = DQNAgent(state_space=observation_space
+                     ,action_space=action_space
+                     ,max_memory_size=30000
+                     ,batch_size=64
+                     ,gamma=0.90
+                     ,lr=0.00025
+                     ,dropout=0.
+                     ,exploration_max=1.0
+                     ,exploration_min=0.02
+                     ,exploration_decay=0.99
+                     ,double_dq=True
+                     ,pretrained=pretrained)
     
     num_episodes = 10001
     env.reset()
     total_rewards = []
+    open(f'training_log.txt', 'a').write(f'epoch_num\tsteps\taction\treward\ttotal_reward\n')
     
     
 
@@ -357,6 +399,7 @@ def run(training_mode, pretrained):
                 agent.experience_replay()
             
             state = state_next
+            open(f'training_log.txt', 'a').write(f'{epoch_num}\t{steps}\t{action.item()}\t{reward.item()}\t{total_reward}\n')
             if terminal:
                 break
         
@@ -387,8 +430,8 @@ def run(training_mode, pretrained):
     
     if num_episodes > 500:
         plt.title("Episodes trained vs. Average Rewards (per 500 eps)")
-        plt.plot([0 for _ in range(500)] + 
-                 np.convolve(total_rewards, np.ones((500,))/500, mode="valid").tolist())
+        plt.plot([0 for _ in range(500)] + np.convolve(total_rewards, np.ones((500,))/500
+                                                       ,mode="valid").tolist())
         plt.show() 
 
 if __name__ == '__main__':
