@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/badge/version-1.0.0-green.svg?style=plastic">
   </a>
   <img src="https://img.shields.io/badge/language-Python-FFD43B.svg?style=plastic&logo=Python">
-  <img src="https://img.shields.io/badge/framework-Jupyter-F37626.svg?style=plastic">
+  <img src="https://img.shields.io/badge/framework-Jupyter-F37626.svg?style=plastic&logo=Jupyter">
   </a>
 </p>
 
