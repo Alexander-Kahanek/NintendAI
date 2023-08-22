@@ -43,5 +43,5 @@ Below are a summary of all the files in this repository:
 ## Contributers
 
 + **Alexander Kahanek**
-* **Chet Lockwood** - [SgtR0ck](https://github.com/SgtR0ck)
+* **Chet Lockwood** - [Atoms-x](https://github.com/Atoms-x)
 + **Marcus Summers**
